@@ -1,8 +1,10 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
 
+
 class Product(models.Model):
-    sku = models.CharField(max_length=50, unique=True)
+    sku = models.CharField(max_length=50, unique=True, editable=False)
     reference = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=100)
     min_quantity = models.IntegerField()
@@ -17,8 +19,18 @@ class Product(models.Model):
     )
     product_type = models.CharField(max_length=3, choices=type_choices)
 
+    # Override the save method to generate a unique SKU SKu is a mix of the first 3 letters of the product name and 3 numbers derived from the reference and 4 numbers derived from 
+    def save(self, *args, **kwargs):
+        self.sku = self.name[:4].upper() + str(self.reference)[:4] + str(self.product_type)[:1] + str(self.product_type)[:1]
+        super().save(*args, **kwargs)
+        print(self.sku)
+    
+    def __str__(self):
+        return self.name    
+
+
 class Order(models.Model):
-    order_number = models.CharField(max_length=50, unique=True)
+    order_number = models.CharField(max_length=50, unique=True, editable=False)
     products = models.ManyToManyField(Product, through='OrderProduct')
     date_ordered = models.DateTimeField(auto_now_add=True)
     date_fulfilled = models.DateTimeField(null=True, blank=True)
@@ -31,6 +43,21 @@ class Order(models.Model):
     status = models.CharField(max_length=1, choices=status_choices, default='P')
     supplier = models.CharField(max_length=100)
     admin = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # Override the save method to generate to calculate the total price of the order
+    def save(self, *args, **kwargs):
+        self.total_price = self.products.aggregate(models.Sum('unit_price'))['unit_price__sum']
+        super().save(*args, **kwargs)
+
+    # Override the save method to generate a unique order number
+    def save(self, *args, **kwargs):
+        self.order_number = str(uuid.uuid4())[:8].upper()
+        super().save(*args, **kwargs)
+    
+
+    def __str__(self):
+        return self.order_number
+
 
 class OrderProduct(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
@@ -79,4 +106,6 @@ class ReparationProduct(models.Model):
 
     class Meta:
         unique_together = ('reparation', 'product')
+
+
 

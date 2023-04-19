@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Create Order</h1>
+  <form method="post">
+    {% csrf_token %}
+    <div>
+      <label for="order_number">Order Number:</label>
+      <input type="text" name="order_number" id="order_number" required>
+    </div>
+    <div>
+      <label for="products">Products:</label>
+      <select name="products" id="products" multiple required>
+        {% for product in products %}
+          <option value="{{ product.id }}">{{ product.name }} - ${{ product.price }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="supplier">Supplier:</label>
+      <input type="text" name="supplier" id="supplier" required>
+    </div>
+    <button type="submit">Create Order</button>
+  </form>
+{% endblock %}
